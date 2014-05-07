@@ -89,6 +89,7 @@ code_change(_OldVsn, State, _Extra) ->
 %% internal
 
 install_handler(Event, Module, Config) ->
+    ?INT_LOG(debug,"lager_handler_watcher_install_handler_1:~p~n\t~p~n\t~p",[Event,Module,Config]),
     case gen_event:add_sup_handler(Event, Module, Config) of
         ok ->
             ?INT_LOG(debug, "Lager installed handler ~p into ~p", [Module, Event]),
