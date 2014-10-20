@@ -13,16 +13,6 @@
   {included_applications, [goldrush]},
   {mod, {lager_app, []}},
   {env, [
-            %% What handlers to install with what arguments
-            {handlers, [
-                {lager_console_backend,[debug,{lager_default_formatter,[date," ",time," [",severity,"] ","|",application,"|",module,"|",function,"|",line,"|",ccookie_id,"|",cid,"|",user,"|",cookie_id,"|",id,"|",request_command,"|",response_command,"|",message,"\n"]}]},
-                {lager_file_backend, [
-                    {file, "log/error.log"}, {level, error}, {size, 10485760}, {date, "$D0"}, {count, 5}]},
-                {lager_file_backend, [
-                    {file, "/tmp/lager_console.log"}, {formatter, lager_default_formatter},
-                           {formatter_config,[date," ",time," [",severity,"] ","|",application,"|",module,"|",function,"|",line,"|",ccookie_id,"|",cid,"|",user,"|",cookie_id,"|",id,"|",request_command,"|",response_command,"|",message,"\n"]},
-                           {level, debug}, {size, 10485760}, {date, "$D0"}, {count, 5}]}
-            ]},
             %% What colors to use with what log levels
             {colored, false},
             {colors, [
