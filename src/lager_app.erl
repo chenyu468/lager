@@ -64,7 +64,7 @@ start(_StartType, _StartArgs) ->
 
     Handlers = case application:get_env(lager, handlers) of
         undefined ->
-            [{lager_console_backend, info},
+            [{lager_console_backend,[debug,{lager_default_formatter,[date," ",time," [",severity,"] ","|",application,"|",module,"|",function,"|",line,"|",ccookie_id,"|",cid,"|",user,"|",cookie_id,"|",id,"|",request_command,"|",response_command,"|",message,"\n"]}]},
                 {lager_file_backend, [{"log/error.log", error, 10485760, "", 5},
                         {"log/console.log", info, 10485760, "", 5}]}];
         {ok, Val} ->
