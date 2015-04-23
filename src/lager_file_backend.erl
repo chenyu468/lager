@@ -143,7 +143,7 @@ handle_event({log, Message},
     case lager_util:is_loggable(Message,L,{lager_file_backend, Name}) of
         true ->
             {ok,write(State, lager_msg:timestamp(Message), lager_msg:severity_as_int(Message), 
-                      re:replace(Formatter:format(Message,FormatConfig),Mp, "", [global, {return, list}])++ "\n")};
+                       re:replace(Formatter:format(Message,FormatConfig),Mp, "", [global, {return, list}])++ "\n")};
         false ->
             {ok, State}
     end;
