@@ -55,22 +55,23 @@
 -define(DEFAULT_CHECK_INTERVAL, 1000).
 
 -record(state, {
-        name :: string(),
-        level :: {'mask', integer()},
-        fd :: file:io_device(),
-        inode :: integer(),
-        flap=false :: boolean(),
-        size = 0 :: integer(),
-        date :: undefined | string(),
-        count = 10 :: integer(),
-        formatter :: atom(),
-        formatter_config :: any(),
-        sync_on :: {'mask', integer()},
-        check_interval = ?DEFAULT_CHECK_INTERVAL :: non_neg_integer(),
-        sync_interval = ?DEFAULT_SYNC_INTERVAL :: non_neg_integer(),
-        sync_size = ?DEFAULT_SYNC_SIZE :: non_neg_integer(),
-        last_check = os:timestamp() :: erlang:timestamp()
-    }).
+          name :: string(),
+          level :: {'mask', integer()},
+          fd :: file:io_device(),
+          inode :: integer(),
+          flap=false :: boolean(),
+          size = 0 :: integer(),
+          date :: undefined | string(),
+          count = 10 :: integer(),
+          formatter :: atom(),
+          formatter_config :: any(),
+          sync_on :: {'mask', integer()},
+          check_interval = ?DEFAULT_CHECK_INTERVAL :: non_neg_integer(),
+          sync_interval = ?DEFAULT_SYNC_INTERVAL :: non_neg_integer(),
+          sync_size = ?DEFAULT_SYNC_SIZE :: non_neg_integer(),
+          last_check = os:timestamp() :: erlang:timestamp(),
+          re_compile ::string()
+         }).
 
 -type option() :: {file, string()} | {level, lager:log_level()} |
                   {size, non_neg_integer()} | {date, string()} |
@@ -103,19 +104,21 @@ init(LogFileConfig) when is_list(LogFileConfig) ->
         Config ->
             %% probabably a better way to do this, but whatever
             [Name, Level, Date, Size, Count, SyncInterval, SyncSize, SyncOn, CheckInterval, Formatter, FormatterConfig] =
-              [proplists:get_value(Key, Config) || Key <- [file, level, date, size, count, sync_interval, sync_size, sync_on, check_interval, formatter, formatter_config]],
+                [proplists:get_value(Key, Config) || Key <- [file, level, date, size, count, sync_interval, sync_size, sync_on, check_interval, formatter, formatter_config]],
             schedule_rotation(Name, Date),
             State0 = #state{name=Name, level=Level, size=Size, date=Date, count=Count, formatter=Formatter,
-                formatter_config=FormatterConfig, sync_on=SyncOn, sync_interval=SyncInterval, sync_size=SyncSize,
-                check_interval=CheckInterval},
+                            formatter_config=FormatterConfig, sync_on=SyncOn, sync_interval=SyncInterval, sync_size=SyncSize,
+                            check_interval=CheckInterval},
             State = case lager_util:open_logfile(Name, {SyncSize, SyncInterval}) of
-                {ok, {FD, Inode, _}} ->
-                    State0#state{fd=FD, inode=Inode};
-                {error, Reason} ->
-                    ?INT_LOG(error, "Failed to open log file ~s with error ~s", [Name, file:format_error(Reason)]),
-                    State0#state{flap=true}
-            end,
-            {ok, State}
+                        {ok, {FD, Inode, _}} ->
+                            State0#state{fd=FD, inode=Inode};
+                        {error, Reason} ->
+                            ?INT_LOG(error, "Failed to open log file ~s with error ~s", [Name, file:format_error(Reason)]),
+                            State0#state{flap=true}
+                    end,
+            Expression = "[\n]",
+            {ok,Mp} = re:compile(Expression),
+            {ok, State#state{re_compile = Mp }}
     end.
 
 %% @private
@@ -134,17 +137,13 @@ handle_call(_Request, State) ->
 
 %% @private
 handle_event({log, Message},
-             #state{name=Name, level=L,formatter=Formatter,formatter_config=FormatConfig} = State) ->
+             #state{name=Name, level=L,formatter=Formatter,formatter_config=FormatConfig,
+                   re_compile = Mp 
+                   } = State) ->
     case lager_util:is_loggable(Message,L,{lager_file_backend, Name}) of
         true ->
-            %% A = lists:dropwhile(fun($\n)->true;
-            %%                        (_)->false
-            %%                     end,Formatter:format(Message,FormatConfig)),
-            %% io:format("_140:~ts",[A]),            
             {ok,write(State, lager_msg:timestamp(Message), lager_msg:severity_as_int(Message), 
-                      %% lists:delete($\n,Formatter:format(Message,FormatConfig))) };
-                      re:replace(Formatter:format(Message,FormatConfig), "[\n]", "", [global, {return, list}])++ "\n")};
-            %% {ok,write(State, lager_msg:timestamp(Message), lager_msg:severity_as_int(Message), A) };
+                      re:replace(Formatter:format(Message,FormatConfig),Mp, "", [global, {return, list}])++ "\n")};
         false ->
             {ok, State}
     end;
