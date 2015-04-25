@@ -7,6 +7,7 @@
   {modules, []},
   {applications, [
                   kernel,
+                  %% goldrush,
                   stdlib
                  ]},
   {registered, [lager_sup, lager_event, lager_crash_log, lager_handler_watcher_sup]},
