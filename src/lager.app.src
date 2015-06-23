@@ -47,7 +47,7 @@
             {error_logger_hwm, 5000},
             %% How big the gen_event mailbox can get before it is switched into sync mode
             %% {async_threshold, 20},
-            {async_threshold, 0},
+            {async_threshold, 0}
             %% Switch back to async mode, when gen_event mailbox size decrease from `async_threshold'
             %% to async_threshold - async_threshold_window
             %% {async_threshold_window, 5}
