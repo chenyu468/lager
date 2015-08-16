@@ -137,14 +137,8 @@ handle_event({log, Message},
              #state{name=Name, level=L,formatter=Formatter,formatter_config=FormatConfig} = State) ->
     case lager_util:is_loggable(Message,L,{lager_file_backend, Name}) of
         true ->
-            %% A = lists:dropwhile(fun($\n)->true;
-            %%                        (_)->false
-            %%                     end,Formatter:format(Message,FormatConfig)),
-            %% io:format("_140:~ts",[A]),            
             {ok,write(State, lager_msg:timestamp(Message), lager_msg:severity_as_int(Message), 
-                      %% lists:delete($\n,Formatter:format(Message,FormatConfig))) };
-                      re:replace(Formatter:format(Message,FormatConfig), "[\n]", "", [global, {return, list}])++ "\n")};
-            %% {ok,write(State, lager_msg:timestamp(Message), lager_msg:severity_as_int(Message), A) };
+                      Formatter:format(Message,FormatConfig)) };
         false ->
             {ok, State}
     end;
