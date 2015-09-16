@@ -153,8 +153,13 @@ log_event(Event, State) ->
                     %% gen_server terminate
                     [Name, _Msg, _State, Reason] = Args,
                     ?CRASH_LOG(Event),
-                    ?LOGFMT(error, Pid, "gen_server ~w terminated with reason: ~s",
-                            [Name, format_reason(Reason)]);
+                    case Reason of
+                        "no need,go away connection" ->
+                            ok;
+                        _ ->
+                            ?LOGFMT(error, Pid, "gen_server ~w terminated with reason: ~s",
+                                    [Name, format_reason(Reason)])
+                    end;
                 "** State machine "++_ ->
                     %% gen_fsm terminate
                     [Name, _Msg, StateName, _StateData, Reason] = Args,
