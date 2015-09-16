@@ -154,19 +154,19 @@ log_event(Event, State) ->
                     [Name, _Msg, _State, Reason] = Args,
                     ?CRASH_LOG(Event),
                     ?LOGFMT(error, Pid, "gen_server ~w terminated with reason: ~s",
-                        [Name, format_reason(Reason)]);
+                            [Name, format_reason(Reason)]);
                 "** State machine "++_ ->
                     %% gen_fsm terminate
                     [Name, _Msg, StateName, _StateData, Reason] = Args,
                     ?CRASH_LOG(Event),
                     ?LOGFMT(error, Pid, "gen_fsm ~w in state ~w terminated with reason: ~s",
-                        [Name, StateName, format_reason(Reason)]);
+                            [Name, StateName, format_reason(Reason)]);
                 "** gen_event handler"++_ ->
                     %% gen_event handler terminate
                     [ID, Name, _Msg, _State, Reason] = Args,
                     ?CRASH_LOG(Event),
                     ?LOGFMT(error, Pid, "gen_event ~w installed in ~w terminated with reason: ~s",
-                        [ID, Name, format_reason(Reason)]);
+                            [ID, Name, format_reason(Reason)]);
                 "** Cowboy handler"++_ ->
                     %% Cowboy HTTP server error
                     ?CRASH_LOG(Event),
@@ -174,14 +174,14 @@ log_event(Event, State) ->
                         [Module, Function, Arity, _Request, _State] ->
                             %% we only get the 5-element list when its a non-exported function
                             ?LOGFMT(error, Pid,
-                                "Cowboy handler ~p terminated with reason: call to undefined function ~p:~p/~p",
-                                [Module, Module, Function, Arity]);
+                                    "Cowboy handler ~p terminated with reason: call to undefined function ~p:~p/~p",
+                                    [Module, Module, Function, Arity]);
                         [Module, Function, Arity, _Class, Reason | Tail] ->
                             %% any other cowboy error_format list *always* ends with the stacktrace
                             StackTrace = lists:last(Tail),
                             ?LOGFMT(error, Pid,
-                                "Cowboy handler ~p terminated in ~p:~p/~p with reason: ~s",
-                                [Module, Module, Function, Arity, format_reason({Reason, StackTrace})])
+                                    "Cowboy handler ~p terminated in ~p:~p/~p with reason: ~s",
+                                    [Module, Module, Function, Arity, format_reason({Reason, StackTrace})])
                     end;
                 "webmachine error"++_ ->
                     %% Webmachine HTTP server error
@@ -189,11 +189,11 @@ log_event(Event, State) ->
                     [Path, Error] = Args,
                     %% webmachine likes to mangle the stack, for some reason
                     StackTrace = case Error of
-                        {error, {error, Reason, Stack}} ->
-                            {Reason, Stack};
-                        _ ->
-                            Error
-                    end,
+                                     {error, {error, Reason, Stack}} ->
+                                         {Reason, Stack};
+                                     _ ->
+                                         Error
+                                 end,
                     ?LOGFMT(error, Pid, "Webmachine error at path ~p : ~s", [Path, format_reason(StackTrace)]);
                 _ ->
                     ?CRASH_LOG(Event),
@@ -208,14 +208,15 @@ log_event(Event, State) ->
                 [{errorContext, Ctx}, {offender, Off}, {reason, Reason}, {supervisor, Name}] ->
                     Offender = format_offender(Off),
                     ?LOGFMT(error, Pid,
-                        "Supervisor ~w had child ~s exit with reason ~s in context ~w",
-                        [supervisor_name(Name), Offender, format_reason(Reason), Ctx]);
+                            "Supervisor ~w had child ~s exit with reason ~s in context ~w",
+                            [supervisor_name(Name), Offender, format_reason(Reason), Ctx]);
                 _ ->
                     ?LOGMSG(error, Pid, "SUPERVISOR REPORT " ++ print_silly_list(D))
             end;
         {error_report, _GL, {Pid, crash_report, [Self, Neighbours]}} ->
             ?CRASH_LOG(Event),
-            ?LOGMSG(error, Pid, "CRASH REPORT " ++ format_crash_report(Self, Neighbours));
+            format_crash_report_outer(Pid,Self, Neighbours);
+        %% ?LOGMSG(error, Pid, "CRASH REPORT " ++ format_crash_report(Self, Neighbours));
         {warning_msg, _GL, {Pid, Fmt, Args}} ->
             ?LOGMSG(warning, Pid, lager:safe_format(Fmt, Args, ?DEFAULT_TRUNCATION));
         {warning_report, _GL, {Pid, std_warning, Report}} ->
@@ -227,7 +228,7 @@ log_event(Event, State) ->
             case Details of
                 [{application, App}, {exited, Reason}, {type, _Type}] ->
                     ?LOGFMT(info, Pid, "Application ~w exited with reason: ~s",
-                        [App, format_reason(Reason)]);
+                            [App, format_reason(Reason)]);
                 _ ->
                     ?LOGMSG(info, Pid, print_silly_list(D))
             end;
@@ -238,12 +239,12 @@ log_event(Event, State) ->
             case Details of
                 [{application, App}, {started_at, Node}] ->
                     ?LOGFMT(info, P, "Application ~w started on node ~w",
-                        [App, Node]);
+                            [App, Node]);
                 [{started, Started}, {supervisor, Name}] ->
                     MFA = format_mfa(get_value(mfargs, Started)),
                     Pid = get_value(pid, Started),
                     ?LOGFMT(debug, P, "Supervisor ~w started ~s at pid ~w",
-                        [supervisor_name(Name), MFA, Pid]);
+                            [supervisor_name(Name), MFA, Pid]);
                 _ ->
                     ?LOGMSG(info, P, "PROGRESS REPORT " ++ print_silly_list(D))
             end;
@@ -252,21 +253,43 @@ log_event(Event, State) ->
     end,
     {ok, State}.
 
-format_crash_report(Report, Neighbours) ->
+format_crash_report_outer(Pid,Report, Neighbours) ->
     Name = case get_value(registered_name, Report, []) of
-        [] ->
-            %% process_info(Pid, registered_name) returns [] for unregistered processes
-            get_value(pid, Report);
-        Atom -> Atom
-    end,
+               [] ->
+                   %% process_info(Pid, registered_name) returns [] for unregistered processes
+                   get_value(pid, Report);
+               Atom -> Atom
+           end,
     {Class, Reason, Trace} = get_value(error_info, Report),
-    ReasonStr = format_reason({Reason, Trace}),
-    Type = case Class of
-        exit -> "exited";
-        _ -> "crashed"
-    end,
-    io_lib:format("Process ~w with ~w neighbours ~s with reason: ~s",
-        [Name, length(Neighbours), Type, ReasonStr]).
+    case Reason of
+        "no need,go away connection" ->
+            ok;
+        _ ->
+            ReasonStr = format_reason({Reason, Trace}),
+            Type = case Class of
+                       exit -> "exited";
+                       _ -> "crashed"
+                   end,
+            A = io_lib:format("Process ~w with ~w neighbours ~s with reason: ~s",
+                              [Name, length(Neighbours), Type, ReasonStr]),
+            ?LOGMSG(error, Pid, "CRASH REPORT " ++ A )
+    end.
+
+%% format_crash_report(Report, Neighbours) ->
+%%     Name = case get_value(registered_name, Report, []) of
+%%         [] ->
+%%             %% process_info(Pid, registered_name) returns [] for unregistered processes
+%%             get_value(pid, Report);
+%%         Atom -> Atom
+%%     end,
+%%     {Class, Reason, Trace} = get_value(error_info, Report),
+%%     ReasonStr = format_reason({Reason, Trace}),
+%%     Type = case Class of
+%%         exit -> "exited";
+%%         _ -> "crashed"
+%%     end,
+%%     io_lib:format("Process ~w with ~w neighbours ~s with reason: ~s",
+%%         [Name, length(Neighbours), Type, ReasonStr]).
 
 format_offender(Off) ->
     case get_value(mfargs, Off) of
