@@ -93,6 +93,8 @@ init([LogFile,{Formatter}]) ->
     %% backwards compatability hack
     init([LogFile,{Formatter,[]}]);
 init([{FileName, LogLevel}, {Formatter,FormatterConfig}]) when is_list(FileName), is_atom(LogLevel), is_atom(Formatter) ->
+    Hostname = love_misc:get_full_host_name(),
+    put(host,Hostname),
     %% backwards compatability hack
     init([{file, FileName}, {level, LogLevel}, {formatter, Formatter}, {formatter_config, FormatterConfig}]);
 init(LogFileConfig) when is_list(LogFileConfig) ->

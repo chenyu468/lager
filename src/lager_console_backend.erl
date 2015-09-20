@@ -43,6 +43,8 @@ init([Level, true]) -> % for backwards compatibility
 init([Level,false]) -> % for backwards compatibility
     init([Level,{lager_default_formatter,?TERSE_FORMAT ++ [eol()]}]);
 init([Level,{Formatter,FormatterConfig}]) when is_atom(Formatter) ->
+    Hostname = love_misc:get_full_host_name(),
+    put(host,Hostname),
     Colors = case application:get_env(lager, colored) of
         {ok, true} ->
             {ok, LagerColors} = application:get_env(lager, colors),

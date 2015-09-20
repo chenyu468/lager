@@ -86,6 +86,10 @@ output(time,Msg) ->
     T;
 output(severity,Msg) ->
     atom_to_list(lager_msg:severity(Msg));
+%%
+output(host,_)->
+    get(host);
+
 output(Prop,Msg) when is_atom(Prop) ->
     Metadata = lager_msg:metadata(Msg),
     make_printable(get_metadata(Prop,Metadata,<<"Undefined">>));
