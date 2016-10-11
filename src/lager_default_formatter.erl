@@ -96,7 +96,7 @@ output(equipment_uid,_)->
 output(local_ip,_)->
     case  application:get_env(fish,local_ip) of
         undefined ->
-            undefined;
+            <<"undefined">>;
         {ok,Value_a} ->
             Value_a
     end;

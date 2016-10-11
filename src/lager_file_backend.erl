@@ -101,7 +101,8 @@ init([{FileName, LogLevel}, {Formatter,FormatterConfig}]) when is_list(FileName)
 init(LogFileConfig) when is_list(LogFileConfig) ->
     case  application:get_env(fish,mq_username) of
         undefined ->
-            ok;
+            %% <<"undefined">>;
+            put(equipment_uid, <<"undefined">>);
         {ok,Value} ->
             io:format("_102:set_equipment_uid"),
             put(equipment_uid, love_misc:to_binary(Value))
