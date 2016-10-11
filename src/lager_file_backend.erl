@@ -104,7 +104,7 @@ init(LogFileConfig) when is_list(LogFileConfig) ->
             %% <<"undefined">>;
             put(equipment_uid, <<"undefined">>);
         {ok,Value} ->
-            io:format("_102:set_equipment_uid"),
+            %% io:format("_102:set_equipment_uid"),
             put(equipment_uid, love_misc:to_binary(Value))
     end,
     case validate_logfile_proplist(LogFileConfig) of
