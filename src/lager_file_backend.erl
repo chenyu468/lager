@@ -95,9 +95,17 @@ init([LogFile,{Formatter}]) ->
 init([{FileName, LogLevel}, {Formatter,FormatterConfig}]) when is_list(FileName), is_atom(LogLevel), is_atom(Formatter) ->
     Hostname = love_misc:get_full_host_name(),
     put(host,Hostname),
+
     %% backwards compatability hack
     init([{file, FileName}, {level, LogLevel}, {formatter, Formatter}, {formatter_config, FormatterConfig}]);
 init(LogFileConfig) when is_list(LogFileConfig) ->
+    case  application:get_env(fish,mq_username) of
+        undefined ->
+            ok;
+        {ok,Value} ->
+            io:format("_102:set_equipment_uid"),
+            put(equipment_uid, love_misc:to_binary(Value))
+    end,
     case validate_logfile_proplist(LogFileConfig) of
         false ->
             %% falied to validate config

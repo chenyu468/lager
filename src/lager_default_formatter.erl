@@ -90,6 +90,17 @@ output(severity,Msg) ->
 output(host,_)->
     get(host);
 
+output(equipment_uid,_)->
+    get(equipment_uid);
+
+output(local_ip,_)->
+    case  application:get_env(fish,local_ip) of
+        undefined ->
+            undefined;
+        {ok,Value_a} ->
+            Value_a
+    end;
+
 output(Prop,Msg) when is_atom(Prop) ->
     Metadata = lager_msg:metadata(Msg),
     make_printable(get_metadata(Prop,Metadata,<<"Undefined">>));
