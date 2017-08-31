@@ -177,6 +177,7 @@ log_event(Event, #state{sink=Sink} = State) ->
             FormatRaw = State#state.raw,
             case {FormatRaw, Fmt} of
                 {false, "** Generic server "++_} ->
+                   %% io:format("_180_"),
                     %% gen_server terminate
                     {Reason, Name} = case Args of
                                          [N, _Msg, _State, R] ->
@@ -187,29 +188,39 @@ log_event(Event, #state{sink=Sink} = State) ->
                                              {R, N}
                                      end,
                     ?CRASH_LOG(Event),
-                    {Md, Formatted} = format_reason_md(Reason),
-                    ?LOGFMT(Sink, error, [{pid, Pid}, {name, Name} | Md], "gen_server ~w terminated with reason: ~s",
-                        [Name, Formatted]);
+                    %% {Md, Formatted} = format_reason_md(Reason),
+                    %% ?LOGFMT(Sink, error, [{pid, Pid}, {name, Name} | Md], "gen_server ~w terminated with reason: ~s",
+                    %%    [Name, Formatted]);
+                    case Reason of
+                        "no need,go away connection" ->
+                            %% io:format("_196_"),
+                            ok;
+                        Other_a ->
+                            %% io:format("_198_"),
+                            {Md, Formatted} = format_reason_md(Reason),
+                            ?LOGFMT(Sink, error, [{pid, Pid}, {name, Name} | Md], "gen_server ~w terminated with reason: ~s",
+                                    [Name, Formatted])
+                    end;
                 {false, "** State machine "++_} ->
                     %% Check if the terminated process is gen_fsm or gen_statem
                     %% since they generate the same exit message
                     {Type, Name, StateName, Reason} = case Args of
-                        [TName, _Msg, TStateName, _StateData, TReason] ->
-                            {gen_fsm, TName, TStateName, TReason};
-                        [TName, _Msg, {TStateName, _StateData}, _ExitType, TReason, _FsmType, Stacktrace] ->
-                            {gen_statem, TName, TStateName, {TReason, Stacktrace}}
-                    end,
+                                                          [TName, _Msg, TStateName, _StateData, TReason] ->
+                                                              {gen_fsm, TName, TStateName, TReason};
+                                                          [TName, _Msg, {TStateName, _StateData}, _ExitType, TReason, _FsmType, Stacktrace] ->
+                                                              {gen_statem, TName, TStateName, {TReason, Stacktrace}}
+                                                      end,
                     {Md, Formatted} = format_reason_md(Reason),
                     ?CRASH_LOG(Event),
                     ?LOGFMT(Sink, error, [{pid, Pid}, {name, Name} | Md], "~s ~w in state ~w terminated with reason: ~s",
-                        [Type, Name, StateName, Formatted]);
+                            [Type, Name, StateName, Formatted]);
                 {false, "** gen_event handler"++_} ->
                     %% gen_event handler terminate
                     [ID, Name, _Msg, _State, Reason] = Args,
                     {Md, Formatted} = format_reason_md(Reason),
                     ?CRASH_LOG(Event),
                     ?LOGFMT(Sink, error, [{pid, Pid}, {name, Name} | Md], "gen_event ~w installed in ~w terminated with reason: ~s",
-                        [ID, Name, Formatted]);
+                            [ID, Name, Formatted]);
                 {false, "** Cowboy handler"++_} ->
                     %% Cowboy HTTP server error
                     ?CRASH_LOG(Event),
@@ -217,15 +228,15 @@ log_event(Event, #state{sink=Sink} = State) ->
                         [Module, Function, Arity, _Request, _State] ->
                             %% we only get the 5-element list when its a non-exported function
                             ?LOGFMT(Sink, error, Pid,
-                                "Cowboy handler ~p terminated with reason: call to undefined function ~p:~p/~p",
-                                [Module, Module, Function, Arity]);
+                                    "Cowboy handler ~p terminated with reason: call to undefined function ~p:~p/~p",
+                                    [Module, Module, Function, Arity]);
                         [Module, Function, Arity, _Class, Reason | Tail] ->
                             %% any other cowboy error_format list *always* ends with the stacktrace
                             StackTrace = lists:last(Tail),
                             {Md, Formatted} = format_reason_md({Reason, StackTrace}),
                             ?LOGFMT(Sink, error, [{pid, Pid} | Md],
-                                "Cowboy handler ~p terminated in ~p:~p/~p with reason: ~s",
-                                [Module, Module, Function, Arity, Formatted])
+                                    "Cowboy handler ~p terminated in ~p:~p/~p with reason: ~s",
+                                    [Module, Module, Function, Arity, Formatted])
                     end;
                 {false, "Ranch listener "++_} ->
                     %% Ranch errors
@@ -234,19 +245,19 @@ log_event(Event, #state{sink=Sink} = State) ->
                         [Ref, _Protocol, Worker, {[{reason, Reason}, {mfa, {Module, Function, Arity}}, {stacktrace, StackTrace} | _], _}] ->
                             {Md, Formatted} = format_reason_md({Reason, StackTrace}),
                             ?LOGFMT(Sink, error, [{pid, Worker} | Md],
-                                "Ranch listener ~p terminated in ~p:~p/~p with reason: ~s",
-                                [Ref, Module, Function, Arity, Formatted]);
+                                    "Ranch listener ~p terminated in ~p:~p/~p with reason: ~s",
+                                    [Ref, Module, Function, Arity, Formatted]);
                         [Ref, _Protocol, Worker, Reason] ->
                             {Md, Formatted} = format_reason_md(Reason),
                             ?LOGFMT(Sink, error, [{pid, Worker} | Md],
-                                "Ranch listener ~p terminated with reason: ~s",
-                                [Ref, Formatted]);
+                                    "Ranch listener ~p terminated with reason: ~s",
+                                    [Ref, Formatted]);
                         [Ref, Protocol, Ret] ->
                             %% ranch_conns_sup.erl module line 119-123 has three parameters error msg, log it.
                             {Md, Formatted} = format_reason_md(Ret),
                             ?LOGFMT(Sink, error, [{pid, Protocol} | Md],
-                                "Ranch listener ~p terminated with result:~s",
-                                [Ref, Formatted])
+                                    "Ranch listener ~p terminated with result:~s",
+                                    [Ref, Formatted])
                     end;
                 {false, "webmachine error"++_} ->
                     %% Webmachine HTTP server error
@@ -254,11 +265,11 @@ log_event(Event, #state{sink=Sink} = State) ->
                     [Path, Error] = Args,
                     %% webmachine likes to mangle the stack, for some reason
                     StackTrace = case Error of
-                        {error, {error, Reason, Stack}} ->
-                            {Reason, Stack};
-                        _ ->
-                            Error
-                    end,
+                                     {error, {error, Reason, Stack}} ->
+                                         {Reason, Stack};
+                                     _ ->
+                                         Error
+                                 end,
                     {Md, Formatted} = format_reason_md(StackTrace),
                     ?LOGFMT(Sink, error, [{pid, Pid} | Md], "Webmachine error at path ~p : ~s", [Path, Formatted]);
                 _ ->
@@ -275,15 +286,24 @@ log_event(Event, #state{sink=Sink} = State) ->
                     Offender = format_offender(Off),
                     {Md, Formatted} = format_reason_md(Reason),
                     ?LOGFMT(Sink, error, [{pid, Pid} | Md],
-                        "Supervisor ~w had child ~s exit with reason ~s in context ~w",
-                        [supervisor_name(Name), Offender, Formatted, Ctx]);
+                            "Supervisor ~w had child ~s exit with reason ~s in context ~w",
+                            [supervisor_name(Name), Offender, Formatted, Ctx]);
                 _ ->
                     ?LOGMSG(Sink, error, Pid, "SUPERVISOR REPORT " ++ print_silly_list(D))
             end;
         {error_report, _GL, {Pid, crash_report, [Self, Neighbours]}} ->
             ?CRASH_LOG(Event),
-            {Md, Formatted} = format_crash_report(Self, Neighbours),
-            ?LOGMSG(Sink, error, [{pid, Pid} | Md], "CRASH REPORT " ++ Formatted);
+            %% io:format("_296:\t~p",[Neighbours]),
+            {Class, Reason, Trace} = get_value(error_info, Self),
+            case Reason of
+                "no need,go away connection" ->
+                    %% io:format("_301_"),
+                    ok;
+                Other_a ->
+                    {Md, Formatted} = format_crash_report(Self, Neighbours),
+                    %% io:format("_297:\t~p",[Formatted]),
+                    ?LOGMSG(Sink, error, [{pid, Pid} | Md], "CRASH REPORT " ++ Formatted)
+            end;
         {warning_msg, _GL, {Pid, Fmt, Args}} ->
             ?LOGFMT(Sink, warning, Pid, Fmt, Args);
         {warning_report, _GL, {Pid, std_warning, Report}} ->
@@ -326,7 +346,7 @@ log_event(Event, #state{sink=Sink} = State) ->
                             MFA = format_mfa(get_value(mfargs, Started)),
                             Pid = get_value(pid, Started),
                             ?LOGFMT(Sink, debug, P, "Supervisor ~w started ~s at pid ~w",
-                                [supervisor_name(Name), MFA, Pid])
+                                    [supervisor_name(Name), MFA, Pid])
                     end;
                 _ ->
                     ?LOGMSG(Sink, info, P, "PROGRESS REPORT " ++ print_silly_list(D))
