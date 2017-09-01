@@ -177,7 +177,7 @@ log_event(Event, #state{sink=Sink} = State) ->
             FormatRaw = State#state.raw,
             case {FormatRaw, Fmt} of
                 {false, "** Generic server "++_} ->
-                   %% io:format("_180_"),
+                    %% io:format("_180_"),
                     %% gen_server terminate
                     {Reason, Name} = case Args of
                                          [N, _Msg, _State, R] ->
@@ -285,9 +285,16 @@ log_event(Event, #state{sink=Sink} = State) ->
                 [{errorContext, Ctx}, {offender, Off}, {reason, Reason}, {supervisor, Name}] ->
                     Offender = format_offender(Off),
                     {Md, Formatted} = format_reason_md(Reason),
-                    ?LOGFMT(Sink, error, [{pid, Pid} | Md],
-                            "Supervisor ~w had child ~s exit with reason ~s in context ~w",
-                            [supervisor_name(Name), Offender, Formatted, Ctx]);
+                    case Reason of
+                        "no need,go away connection" ->
+                            %% io:format("_196_"),
+                            ok;
+                        Other_a ->
+                            %% io:format("_198_"),
+                            ?LOGFMT(Sink, error, [{pid, Pid} | Md],
+                                    "Supervisor ~w had child ~s exit with reason ~s in context ~w",
+                                    [supervisor_name(Name), Offender, Formatted, Ctx])
+                    end;
                 _ ->
                     ?LOGMSG(Sink, error, Pid, "SUPERVISOR REPORT " ++ print_silly_list(D))
             end;
