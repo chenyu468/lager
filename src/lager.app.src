@@ -46,7 +46,7 @@
             %% Whether to redirect error_logger messages into the default lager_event sink - defaults to true
             {error_logger_redirect, true},
             %% How many messages per second to allow from error_logger before we start dropping them
-            {error_logger_hwm, 50},
+            {error_logger_hwm, 300},
             %% How big the gen_event mailbox can get before it is
             %% switched into sync mode.  This value only applies to
             %% the default sink; extra sinks can supply their own.
