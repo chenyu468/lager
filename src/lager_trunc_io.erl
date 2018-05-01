@@ -280,13 +280,13 @@ print(List, Max, Options) when is_list(List) ->
     end;
 
 print(Map, Max, Options) ->
-    case erlang:is_builtin(erlang, is_map, 1) andalso erlang:is_map(Map) of
-        true ->
-            {MapBody, Len} = map_body(Map, Max - 3, dec_depth(Options)),
-            {[$#, ${, MapBody, $}], Len + 3};
-        false ->
-            error(badarg, [Map, Max, Options])
-    end.
+    %% case erlang:is_builtin(erlang, is_map, 1) andalso erlang:is_map(Map) of
+    %%     true ->
+    %%         {MapBody, Len} = map_body(Map, Max - 3, dec_depth(Options)),
+    %%         {[$#, ${, MapBody, $}], Len + 3};
+    %%     false ->
+            error(badarg, [Map, Max, Options]).
+    %%end.
 
 %% Returns {List, Length}
 tuple_contents(Tuple, Max, Options) ->
